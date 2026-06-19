@@ -24,6 +24,35 @@ A browser-based real-time AI avatar platform that animates user-provided portrai
 - MediaPipe face tracking integration
 - WebSocket client connection
 
+## 🔗 Quick Links
+
+- **GitHub Repository**: (See Deployment section)
+- **LivePortrait Source**: https://github.com/KwaiVGI/LivePortrait
+- **Model Weights Download**: Run `python backend/download_models.py`
+
+## 📦 Download & Installation
+
+### Option 1: Download ZIP
+Download the project from the GitHub repository.
+
+### Option 2: Clone & Setup
+```bash
+git clone <repository-url>
+cd mickey-jagger
+
+# Download model weights
+python backend/download_models.py
+
+# Install backend dependencies
+cd backend && pip install -r requirements.txt
+
+# Install frontend dependencies
+cd ../frontend && npm install
+```
+
+### Option 3: Google Colab / Kaggle
+See `notebooks/` directory for GPU deployment notebooks.
+
 ## Features
 
 ### 🎭 Avatar Animation (LivePortrait Official)
