@@ -33,7 +33,9 @@ export function AvatarDisplay({
           }
         }
       }
-      img.src = `data:image/jpeg;base64,${frameUrl}`
+      // Handle both with and without data URL prefix
+      const src = frameUrl.startsWith('data:') ? frameUrl : `data:image/jpeg;base64,${frameUrl}`
+      img.src = src
       setCurrentFrame(frameUrl)
     }
   }, [frameUrl])

@@ -8,10 +8,9 @@ export { API_BASE_URL, WS_BASE_URL }
 // Health check
 export async function checkHealth(): Promise<{
   status: string
-  engine_ready: boolean
-  engine_name: string
-  version: string
-  active_connections: number
+  models_loaded: boolean
+  engine: string
+  active_sessions: number
 } | null> {
   try {
     const response = await fetch(`${API_BASE_URL}/health`)
@@ -27,7 +26,8 @@ export async function checkHealth(): Promise<{
 export async function uploadPortrait(file: File): Promise<{
   session_id: string
   portrait_loaded: boolean
-  created_at: number
+  image_size: [number, number]
+  engine: string
 } | null> {
   try {
     const formData = new FormData()
@@ -38,7 +38,10 @@ export async function uploadPortrait(file: File): Promise<{
       body: formData,
     })
     
-    if (!response.ok) return null
+    if (!response.ok) {
+      const error = await response.json()
+      throw new Error(error.detail || 'Upload failed')
+    }
     return await response.json()
   } catch (error) {
     console.error('Portrait upload failed:', error)
@@ -46,54 +49,48 @@ export async function uploadPortrait(file: File): Promise<{
   }
 }
 
-// Animate frame
-export async function animateFrame(motion: {
-  pitch: number
-  yaw: number
-  roll: number
-  eye_blink_left: number
-  eye_blink_right: number
-  eye_look_x: number
-  eye_look_y: number
-  mouth_open: number
-  mouth_smile: number
-  expression_happy: number
-  timestamp?: number
-}): Promise<{
+// Animate frame with session_id as query param
+export async function animateFrame(
+  sessionId: string,
+  motion: {
+    pitch?: number
+    yaw?: number
+    roll?: number
+    eye_blink_left?: number
+    eye_blink_right?: number
+    mouth_open?: number
+    mouth_smile?: number
+  }
+): Promise<{
   success: boolean
   frame: string | null
   latency_ms: number
-  timestamp: number
+  timestamp: string
+  frame_count: number
 } | null> {
   try {
-    const response = await fetch(`${API_BASE_URL}/animate`, {
+    // Build query params
+    const params = new URLSearchParams()
+    params.append('session_id', sessionId)
+    if (motion.pitch !== undefined) params.append('pitch', motion.pitch.toString())
+    if (motion.yaw !== undefined) params.append('yaw', motion.yaw.toString())
+    if (motion.roll !== undefined) params.append('roll', motion.roll.toString())
+    if (motion.eye_blink_left !== undefined) params.append('eye_blink_left', motion.eye_blink_left.toString())
+    if (motion.eye_blink_right !== undefined) params.append('eye_blink_right', motion.eye_blink_right.toString())
+    if (motion.mouth_open !== undefined) params.append('mouth_open', motion.mouth_open.toString())
+    if (motion.mouth_smile !== undefined) params.append('mouth_smile', motion.mouth_smile.toString())
+
+    const response = await fetch(`${API_BASE_URL}/animate?${params.toString()}`, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        ...motion,
-        timestamp: motion.timestamp || Date.now(),
-      }),
     })
     
-    if (!response.ok) return null
+    if (!response.ok) {
+      const error = await response.json()
+      throw new Error(error.detail || 'Animation failed')
+    }
     return await response.json()
   } catch (error) {
     console.error('Animation failed:', error)
-    return null
-  }
-}
-
-// Get preview
-export async function getPreview(): Promise<string | null> {
-  try {
-    const response = await fetch(`${API_BASE_URL}/preview`)
-    if (!response.ok) return null
-    const data = await response.json()
-    return data.frame || null
-  } catch (error) {
-    console.error('Preview fetch failed:', error)
     return null
   }
 }
@@ -104,16 +101,19 @@ export class AvatarWebSocket {
   private reconnectAttempts = 0
   private maxReconnectAttempts = 5
   private reconnectDelay = 1000
+  private sessionId: string | null = null
   private onFrameCallback: ((frame: string, latency: number) => void) | null = null
   private onStatusCallback: ((status: 'connected' | 'disconnected' | 'error') => void) | null = null
   private onErrorCallback: ((error: string) => void) | null = null
 
   constructor(private clientId: string) {}
 
-  connect() {
+  connect(sessionId: string) {
     if (this.ws?.readyState === WebSocket.OPEN) return
+    
+    this.sessionId = sessionId
 
-    const wsUrl = `${WS_BASE_URL}/ws/avatar/${this.clientId}`
+    const wsUrl = `${WS_BASE_URL}/ws/avatar/${sessionId}`
     console.log('Connecting to WebSocket:', wsUrl)
     
     this.ws = new WebSocket(wsUrl)
@@ -154,16 +154,13 @@ export class AvatarWebSocket {
   }
 
   sendMotion(motion: {
-    pitch: number
-    yaw: number
-    roll: number
-    eye_blink_left: number
-    eye_blink_right: number
-    eye_look_x: number
-    eye_look_y: number
-    mouth_open: number
-    mouth_smile: number
-    expression_happy: number
+    pitch?: number
+    yaw?: number
+    roll?: number
+    eye_blink_left?: number
+    eye_blink_right?: number
+    mouth_open?: number
+    mouth_smile?: number
   }) {
     if (this.ws?.readyState === WebSocket.OPEN) {
       this.ws.send(JSON.stringify({
@@ -197,7 +194,9 @@ export class AvatarWebSocket {
     console.log(`Attempting reconnect in ${delay}ms (attempt ${this.reconnectAttempts})`)
     
     setTimeout(() => {
-      this.connect()
+      if (this.sessionId) {
+        this.connect(this.sessionId)
+      }
     }, delay)
   }
 

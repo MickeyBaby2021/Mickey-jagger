@@ -5,7 +5,7 @@ import { AvatarWebSocket } from '@/lib/api'
 import { MotionData, ConnectionStatus } from '@/lib/types'
 
 interface UseAvatarWebSocketOptions {
-  clientId?: string
+  sessionId: string | null
   onFrame?: (frame: string, latency: number) => void
   enabled?: boolean
 }
@@ -13,23 +13,28 @@ interface UseAvatarWebSocketOptions {
 interface UseAvatarWebSocketReturn {
   status: ConnectionStatus
   latency: number
-  connect: () => void
+  connect: (sessionId: string) => void
   disconnect: () => void
-  sendMotion: (motion: MotionData) => void
+  sendMotion: (motion: Partial<MotionData>) => void
 }
 
 export function useAvatarWebSocket({
-  clientId,
+  sessionId,
   onFrame,
   enabled = true,
-}: UseAvatarWebSocketOptions = {}): UseAvatarWebSocketReturn {
+}: UseAvatarWebSocketOptions): UseAvatarWebSocketReturn {
   const [status, setStatus] = useState<ConnectionStatus>('disconnected')
   const [latency, setLatency] = useState(0)
   const wsRef = useRef<AvatarWebSocket | null>(null)
-  const clientIdRef = useRef(clientId || `client_${Date.now()}`)
+  const sessionIdRef = useRef(sessionId)
+
+  // Update session ID ref when it changes
+  useEffect(() => {
+    sessionIdRef.current = sessionId
+  }, [sessionId])
 
   useEffect(() => {
-    if (!enabled) {
+    if (!enabled || !sessionId) {
       if (wsRef.current) {
         wsRef.current.disconnect()
         wsRef.current = null
@@ -38,22 +43,12 @@ export function useAvatarWebSocket({
     }
 
     // Create WebSocket connection
-    const ws = new AvatarWebSocket(clientIdRef.current)
+    const ws = new AvatarWebSocket(sessionId)
     wsRef.current = ws
 
     // Set up callbacks
     ws.onStatus((newStatus) => {
-      switch (newStatus) {
-        case 'connected':
-          setStatus('connected')
-          break
-        case 'disconnected':
-          setStatus('disconnected')
-          break
-        case 'error':
-          setStatus('error')
-          break
-      }
+      setStatus(newStatus)
     })
 
     ws.onFrame((frame, wsLatency) => {
@@ -68,20 +63,32 @@ export function useAvatarWebSocket({
 
     // Connect
     setStatus('connecting')
-    ws.connect()
+    ws.connect(sessionId)
 
     return () => {
       ws.disconnect()
       wsRef.current = null
     }
-  }, [enabled, onFrame])
+  }, [enabled, sessionId, onFrame])
 
-  const connect = useCallback(() => {
-    if (wsRef.current && status === 'disconnected') {
-      setStatus('connecting')
-      wsRef.current.connect()
+  const connect = useCallback((newSessionId: string) => {
+    if (wsRef.current) {
+      wsRef.current.disconnect()
     }
-  }, [status])
+    const ws = new AvatarWebSocket(newSessionId)
+    wsRef.current = ws
+    
+    ws.onStatus((newStatus) => {
+      setStatus(newStatus)
+    })
+    ws.onFrame((frame, wsLatency) => {
+      setLatency(wsLatency)
+      onFrame?.(frame, wsLatency)
+    })
+    
+    setStatus('connecting')
+    ws.connect(newSessionId)
+  }, [onFrame])
 
   const disconnect = useCallback(() => {
     if (wsRef.current) {
@@ -90,7 +97,7 @@ export function useAvatarWebSocket({
     }
   }, [])
 
-  const sendMotion = useCallback((motion: MotionData) => {
+  const sendMotion = useCallback((motion: Partial<MotionData>) => {
     if (wsRef.current?.isConnected()) {
       wsRef.current.sendMotion({
         pitch: motion.pitch,
@@ -98,11 +105,8 @@ export function useAvatarWebSocket({
         roll: motion.roll,
         eye_blink_left: motion.eye_blink_left,
         eye_blink_right: motion.eye_blink_right,
-        eye_look_x: motion.eye_look_x,
-        eye_look_y: motion.eye_look_y,
         mouth_open: motion.mouth_open,
         mouth_smile: motion.mouth_smile,
-        expression_happy: motion.expression_happy,
       })
     }
   }, [])

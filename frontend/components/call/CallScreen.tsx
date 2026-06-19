@@ -27,6 +27,7 @@ export function CallScreen({ onEndCall }: CallScreenProps) {
   // Avatar state
   const [avatarFrame, setAvatarFrame] = useState<string | null>(null)
   const [portraitFile, setPortraitFile] = useState<File | null>(null)
+  const [sessionId, setSessionId] = useState<string | null>(null)
   const [isAnimating, setIsAnimating] = useState(false)
   
   // Connection state
@@ -42,7 +43,6 @@ export function CallScreen({ onEndCall }: CallScreenProps) {
   
   // Refs
   const fileInputRef = useRef<HTMLInputElement>(null)
-  const clientIdRef = useRef(`client_${Date.now()}`)
   
   // Webcam hook
   const { 
@@ -63,8 +63,8 @@ export function CallScreen({ onEndCall }: CallScreenProps) {
   
   // WebSocket hook
   const { status, latency: wsLatency, sendMotion } = useAvatarWebSocket({
-    clientId: clientIdRef.current,
-    enabled: backendConnected && !!portraitFile,
+    sessionId: sessionId,
+    enabled: backendConnected && !!sessionId,
     onFrame: (frame) => {
       setAvatarFrame(frame)
       setIsAnimating(true)
@@ -121,6 +121,7 @@ export function CallScreen({ onEndCall }: CallScreenProps) {
       const result = await uploadPortrait(file)
       if (result?.portrait_loaded) {
         setPortraitFile(file)
+        setSessionId(result.session_id)
         setShowUpload(false)
       }
     } catch (error) {

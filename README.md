@@ -6,52 +6,98 @@ A browser-based real-time AI avatar platform that animates user-provided portrai
 ![License](https://img.shields.io/badge/license-MIT-green.svg)
 ![Python](https://img.shields.io/badge/python-3.10+-yellow.svg)
 ![Next.js](https://img.shields.io/badge/next.js-15-black.svg)
+![LivePortrait](https://img.shields.io/badge/AI-LivePortrait-green.svg)
+
+## 🚀 Current Status
+
+**Milestone 1: COMPLETE** ✅
+- LivePortrait backend integration working
+- Portrait upload and animation functional
+- ~8 seconds per frame on CPU
+
+**Milestone 2: COMPLETE** ✅
+- WebSocket communication layer implemented
+- Real-time motion streaming working
+
+**Milestone 3: COMPLETE** ✅
+- Next.js frontend with phone-frame UI
+- MediaPipe face tracking integration
+- WebSocket client connection
 
 ## Features
 
-### 🎭 Avatar Animation
-- Real-time portrait animation from webcam input
+### 🎭 Avatar Animation (LivePortrait Official)
+- **Real portrait animation using official LivePortrait models**
 - Head pose tracking (pitch, yaw, roll)
 - Eye movement and natural blinking
 - Mouth movement and expression recognition
 - Smooth motion interpolation
+- 512x512 animated output
 
 ### 📱 Premium Mobile Interface
-- Realistic phone frame design
-- FaceTime/WhatsApp inspired call UI
-- Status indicators and call timer
+- Realistic smartphone frame design (FaceTime/WhatsApp inspired)
 - Glassmorphism effects
-- Smooth animations with Framer Motion
+- Framer Motion animations
+- Status bar with signal/battery indicators
+- Call timer display
+- Connection status indicators
 
-### 🔧 Face Tracking
-- MediaPipe Face Mesh integration
-- Face mesh landmark detection
-- Blink detection
+### 🔧 Face Tracking (MediaPipe)
+- Face mesh landmark detection (468 points)
+- Blink detection using eye aspect ratio
 - Eye gaze tracking
 - Expression recognition
+- Head pose estimation
 
 ### 📡 Real-time Communication
 - WebSocket-based streaming
-- Low-latency motion data transfer
+- Motion data transfer (pitch, yaw, roll, blinks, mouth)
 - Automatic reconnection
-- Multiple client support
+- Latency tracking
 
-### 🎬 OBS Mode & Streaming
-- Browser Source compatibility
-- Transparent background support
-- Green screen mode ready
-- Screen sharing capabilities
+## Quick Start
+
+### 1. Start Backend
+
+```bash
+cd backend
+pip install -r requirements.txt
+python -m uvicorn main:app --host 0.0.0.0 --port 8000
+```
+
+### 2. Start Frontend
+
+```bash
+cd frontend
+npm install
+npm run dev
+```
+
+### 3. Open Browser
+
+Navigate to http://localhost:3000
 
 ## Architecture
 
 ```
 mickey-jagger/
 ├── backend/                    # Python FastAPI backend
-│   ├── main.py               # FastAPI application
-│   ├── avatar_engine/         # Avatar animation engine
-│   │   ├── base_engine.py    # Abstract base class
-│   │   └── landmark_warp_engine.py  # Landmark-based warping
-│   └── requirements.txt      # Python dependencies
+│   ├── main.py               # FastAPI application with LivePortrait
+│   ├── LivePortrait/         # Official LivePortrait source code
+│   │   ├── src/
+│   │   │   ├── config/      # Model configurations
+│   │   │   ├── modules/     # Neural network modules
+│   │   │   └── utils/       # Utilities (cropper, camera)
+│   │   └── pretrained_weights/  # Model weights
+│   └── requirements.txt
+├── frontend/                  # Next.js 15 frontend
+│   ├── app/                 # App directory
+│   ├── components/           # React components
+│   │   ├── avatar/         # Avatar display
+│   │   ├── call/           # Call screen
+│   │   └── ui/             # UI components
+│   └── hooks/               # Custom React hooks
+└── README.md
 │
 ├── frontend/                   # Next.js 15 frontend
 │   ├── app/                   # Next.js app directory

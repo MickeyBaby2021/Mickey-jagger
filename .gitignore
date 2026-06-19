@@ -48,3 +48,9 @@ coverage/
 
 # Production
 dist/
+
+# Model weights (too large for git, download separately)
+*.pth
+*.pt
+*.onnx
+backend/LivePortrait/pretrained_weights/

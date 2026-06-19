@@ -72,21 +72,21 @@ export interface DeviceInfo {
 export interface SessionResponse {
   session_id: string
   portrait_loaded: boolean
-  created_at: number
+  image_size: [number, number]
+  engine: string
 }
 
 export interface AnimationResponse {
   success: boolean
   frame: string | null
   latency_ms: number
-  timestamp: number
+  timestamp: string
+  frame_count: number
 }
 
 export interface HealthResponse {
   status: string
-  engine_ready: boolean
-  engine_name: string
-  version: string
-  active_connections: number
-  timestamp: number
+  models_loaded: boolean
+  engine: string
+  active_sessions: number
 }
