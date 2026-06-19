@@ -1,0 +1,26 @@
+# FastAPI and server
+fastapi==0.115.0
+uvicorn[standard]==0.30.6
+python-multipart==0.0.9
+websockets==12.0
+numpy==1.26.4
+Pillow==10.4.0
+opencv-python-headless==4.10.0.84
+
+# Face tracking
+mediapipe==0.10.14
+
+# PyTorch (CPU only for this deployment)
+torch==2.4.0
+torchvision==0.19.0
+
+# ONNX Runtime for optimized inference
+onnxruntime==1.19.0
+
+# Image processing
+scipy==1.14.1
+scikit-image==0.24.0
+
+# Utilities
+python-dotenv==1.0.1
+aiofiles==23.2.1
